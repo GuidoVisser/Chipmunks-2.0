@@ -1,0 +1,16 @@
+6 netlists op twee verschillende prints - ball
+Elk punt slaan we op als een position object met een methode position.move(). Het aantal moves dat je uitvoert om van punt A naar punt B te komen is gelijk aan de afstand die je af moet leggen.
+Het is dus belangrijk om het aantal moves te optimaliseren.
+Elk position object heeft een x, y en een z attribuut.
+We hoeven alleen de gebruikte punten op te slaan om geheugen en rekenkracht te besparen.
+Elk pad telt even zwaar.
+Uiteindelijk moeten we elke netlist in de prints tegerlijkertijd kunnen runnen
+
+
+Tech inteviesie:
+REPRESENTATIE!!
+Classes is goed. Aparte class voor Grid en chips
+Matplotlib/robot opdracht voor visuele feedback
+Representatie proberen af te hebben voor volgende week donderdag
+Uitzoeken hoe we classes modelleren.
+
