@@ -36,7 +36,7 @@ def visualize3DData (X):
     ax.set_ylim(0, height)
     ax.set_zlim(-4, 4)
     
-    ax.axis('off')
+    #ax.axis('off')
     #grid(b = True, which = 'major', color = 'b')
 
     def distance(point, event):
