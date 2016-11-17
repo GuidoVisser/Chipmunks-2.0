@@ -1,9 +1,12 @@
 """"
 README:
-Ik heb de naam 'value' in 'position' veranderd.
-start, value, en goal hebben geen 'value' meer, maar zijn een positie object.
 De afstand tussen twee posities, in 3D, is delta_x plus delta_y plus delta_z
 
+Dit programma rekent het kortste pad uit tussen twee objecten.
+Er wordt nog geen regening gehouden met obstakels en de randen van de grid.
+Tot nu toe wordt de Position class gebruikt om posities op de grid op te slaan,
+maar in de toekomst willen we naar de GridPosition class, omdat we dan simpel kunnen bijhouden welke
+punten wel en niet toegankelijk zijn voor volgende paden
 """
 
 from Queue import PriorityQueue
@@ -35,6 +38,15 @@ class Position(object):
 
     def getZ(self):
         return self.z
+
+
+class GridPosition(Position):
+    """"
+    Position on the grid
+    """
+    def __init__(self, x=0, y=0, z=0):
+        super(GridPosition, self).__init__(x, y, z)
+        isPath = False
 
 
 class State(object):
@@ -121,42 +133,65 @@ class StatePosition(State):
             self.children.append(child6)
 
 
+class AStar_Solver:
+    def __init__(self, start, goal):
+        self.path = []
+        self.visited = []
+        self.priorityQueue = PriorityQueue()
+        self.start = start
+        self.goal = goal
 
+    def Solve(self):
+        # initialize starting point
+        startState = StatePosition(self.start,
+                                  0,
+                                  self.start,
+                                  self.goal)
 
-            # for i in xrange(len(self.goal) - 1):
-            #     val = self.position
-            #     val = val[:i] + val[i+1] + val[i] + val[i+2:]
-            #     child = State_Position(val, self)
-            #     self.children.append(child)
+        # add starting point to children
+        self.priorityQueue.put((0, startState))
 
-# class AStar_Solver:
-#     def __init__(self, start, goal):
-#         self.path = []
-#         self.visitedQueue = []
-#         self.priorityQueue = PriorityQueue()
-#         self.start = start
-#         self.goal = goal
-#
-#     def Solve(self):
-#         startState = State_Position(self.start,
-#                                   0,
-#                                   self.start,
-#                                   self.goal)
-#         # id-count
-#         count = 0
-#         self.priorityQueue.put((0, count, startState))
-#         while not self.path and self.priorityQueue.qsize():
-#             closestChild = self.priorityQueue.get()[2]
-#             closestChild.createChildren()
-#             self.visitedQueue.append(closestChild.position)
-#             for child in closestChild.children:
-#                 if child.position not in self.visitedQueue:
-#                     count += 1
-#                     if not child.dist:
-#                         self.path = child.path
-#                         break
-#                     self.priorityQueue.put((child.dist, count, closestChild))
-#         if not self.path:
-#             "Goal of " + self.goal + " is not possible."
-#         return self.path
+        # as long as path is not defined and there are available children
+        while not self.path and self.priorityQueue.qsize():
+
+            # The closest child is the one with the shortest distance to goal
+            closestChild = self.priorityQueue.get()[1]
+
+            # create the children for this closest child
+            closestChild.createChildren()
+
+            # add the closest child to the visited list
+            self.visited.append(closestChild.position)
+
+            # check for all children if it is already in children
+            for child in closestChild.children:
+                if child.position not in self.visited:
+
+                    # if distance is 0 child is goal
+                    if not child.dist:
+                        self.path = child.path
+                        break
+
+                    # add child to children list
+                    self.priorityQueue.put((child.dist, child))
+
+        # if no path was found give error message
+        if not self.path:
+            "Goal of " + self.goal + " is not possible."
+
+        # return the path that was found
+        return self.path
+
+##====================
+## MAIN
+
+start = Position(3,0,1)
+goal = Position(1,4,2)
+print 'running...'
+a = AStar_Solver(start, goal)
+a.Solve()
+print 'pathlength is: ', len(a.path) - 1
+for elem in a.path:
+    print elem.x, elem.y, elem.z
+
 
