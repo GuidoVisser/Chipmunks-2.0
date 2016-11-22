@@ -31,13 +31,12 @@ X = np.transpose(array)
 def visualize3DData (X):
     fig = plt.figure()
     ax = fig.gca(projection = '3d')
-    ax.scatter(X[:, 0], X[:, 1], X[:, 2], c = 'r', marker = 'o', picker = True)
+    ax.scatter(X[:, 0], X[:, 1], X[:, 2], c = 'r', marker = 'o', s = 60, alpha = 1)
     ax.set_xlim(0, width)
     ax.set_ylim(0, height)
     ax.set_zlim(-4, 4)
     
-    #ax.axis('off')
-    #grid(b = True, which = 'major', color = 'b')
+    ax.axis('off')
 
     def distance(point, event):
         # Project 3d data space to 2d data space
@@ -79,7 +78,14 @@ def visualize3DData (X):
     def onMouseMotion(event):
         closestIndex = calcClosestDatapoint(X, event)
         annotatePlot (X, closestIndex, event)
+    
+    def drawXYplane(width, height):
+        for line in range(0, width+1): 
+            plt.plot([line, line], [0, height], color = 'black', lw = 1, alpha = 0.5)
+        for line in range(0, height+1):
+            plt.plot([0, width], [line, line], color = 'black', lw =1, alpha = 0.5)
 
+    drawXYplane(width, height)
     fig.canvas.mpl_connect('motion_notify_event', onMouseMotion)  # on mouse motion
     plt.show()
 
