@@ -40,6 +40,16 @@ class Position(object):
         z = abs(self.z - other.z)
         return x + y + z
 
+    def inList(self, list):
+        """"
+        check if this position is in a list of positions
+        """
+        for pos in list:
+            if pos.x == self.x:
+                if pos.y == self.y:
+                    if pos.z == self.z:
+                        return True
+        return False
 
     def getX(self):
         return self.x
@@ -51,34 +61,26 @@ class Position(object):
         return self.z
 
 
-# class GridPosition(Position):
-#     """"
-#     Position on the grid
-#     """
-#     def __init__(self, x=0, y=0, z=0, isWall = False, isGate = False):
-#         super(GridPosition, self).__init__(x, y, z)
-#         self.isWall = isWall
-#         self.isGate = isGate
-
-
 class Grid(object):
     """"
     Grid of points that are either a wall, a gate or free space
     """
-    def __init__(self, max_x, max_y, max_z = 7):
+    def __init__(self, gates, max_x, max_y, max_z = 7):
         self.walls = []
-        for x in range(-1, max_x + 1):
-            for y in range(-1, max_y + 1):
+        self.gates = gates
+        for x in xrange(-1, max_x+2):
+            for y in xrange(-1, max_y+2):
                 self.walls.append(Position(x, y, -1))
-                self.walls.append(Position(x, y, max_z))
-        for x in range(-1, max_x + 1):
-            for z in range(0, max_z):
-                self.walls.append(Position(x, -1, z))
-                self.walls.append(Position(x, max_y, z))
-        for y in range(0, max_y):
-            for z in range(0, max_z):
+                self.walls.append(Position(x, y, max_z+1))
+        for y in xrange(-1, max_y+2):
+            for z in xrange(0, max_z+1):
                 self.walls.append(Position(-1, y, z))
-                self.walls.append(Position(max_x, y, z))
+                self.walls.append(Position(max_x+1, y, z))
+        for x in xrange(0, max_x+1):
+            for z in xrange(0, max_z+1):
+                self.walls.append(Position(x, -1, z))
+                self.walls.append(Position(x, max_y+1, z))
+
 
 class State(object):
     def __init__(self, grid, position, parent,
@@ -88,6 +90,7 @@ class State(object):
         self.position = position
         self.grid = grid
         self.dist = 0
+        self.rating = 0
         if parent:
             self.path = parent.path[:]
             self.path.append(position)
@@ -98,10 +101,7 @@ class State(object):
             self.start = start
             self.goal = goal
 
-    def getDist(self):
-        pass
-
-    def createChildren(self):
+    def createChildren(self, visited_list):
         pass
 
 
@@ -109,68 +109,62 @@ class StatePosition(State):
     def __init__(self, grid, position, parent,
                  start=Position(0, 0, 0), goal=Position(0, 0, 0)):
         super(StatePosition, self).__init__(grid, position, parent, start, goal)
-        self.dist = self.getDist()
 
-    def getDist(self):
-        """"
-        Returns the distance between goal and itself.
-        """
-        if self.position == self.goal:
-            return 0
-        distance = self.position.getDist(self.goal)
-        return distance
+        # distance to goal
+        self.dist = self.position.getDist(self.goal)
 
-    def createChildren(self):
+        # children are rated on distance to goal plus distance to start
+        self.rating = self.dist + self.position.getDist(self.start)
+
+    def createChildren(self, visited_list):
         if not self.children:
-            # Childern in x direction
             direct_children = []
-            direct_children.append(StatePosition(grid,
-                                   self.position + Position(1, 0, 0),
-                                    self,
-                                    self.start,
-                                    self.goal))
+            direct_children.append(StatePosition(self.grid,
+                                                 self.position + Position(1, 0, 0),
+                                                 self,
+                                                 self.start,
+                                                 self.goal))
 
-            direct_children.append(StatePosition(grid,
-                                   self.position + Position(-1, 0, 0),
-                                    self,
-                                    self.start,
-                                    self.goal))
+            direct_children.append(StatePosition(self.grid,
+                                                 self.position + Position(-1, 0, 0),
+                                                 self,
+                                                 self.start,
+                                                 self.goal))
 
-            direct_children.append(StatePosition(grid,
-                                   self.position + Position(0, 1, 0),
-                                    self,
-                                    self.start,
-                                    self.goal))
+            direct_children.append(StatePosition(self.grid,
+                                                 self.position + Position(0, 1, 0),
+                                                 self,
+                                                 self.start,
+                                                 self.goal))
 
-            direct_children.append(StatePosition(grid,
-                                   self.position + Position(0, -1, 0),
-                                    self,
-                                    self.start,
-                                    self.goal))
+            direct_children.append(StatePosition(self.grid,
+                                                 self.position + Position(0, -1, 0),
+                                                 self,
+                                                 self.start,
+                                                 self.goal))
 
-            direct_children.append(StatePosition(grid,
-                                   self.position + Position(0, 0, 1),
-                                    self,
-                                    self.start,
-                                    self.goal))
+            direct_children.append(StatePosition(self.grid,
+                                                 self.position + Position(0, 0, 1),
+                                                 self,
+                                                 self.start,
+                                                 self.goal))
 
-            direct_children.append(StatePosition(grid,
-                                   self.position + Position(0, 0, -1),
-                                    self,
-                                    self.start,
-                                    self.goal))
+            direct_children.append(StatePosition(self.grid,
+                                                 self.position + Position(0, 0, -1),
+                                                 self,
+                                                 self.start,
+                                                 self.goal))
 
+            # check if the position of the direct child is available
             for child in direct_children:
-                check = False
-                for wall in grid.walls:
-                    if wall.x == child.position.x:
-                        if wall.y == child.position.y:
-                            if wall.z == child.position.z:
-                                check = True
-                                break
-                if check == True:
-                    direct_children.remove(child)
-            self.children += direct_children
+                if child.dist == 0:
+                    self.children.append(child)
+                else:
+                    if not child.position.inList(self.grid.walls):
+                        if not child.position.inList(visited_list):
+                            if not child.position.inList(self.grid.gates):
+                                self.children.append(child)
+            # print self.children
 
 
 class AStar_Solver:
@@ -186,8 +180,9 @@ class AStar_Solver:
         self.grid = grid
 
     def Solve(self):
+
         # initialize starting point
-        startState = StatePosition(grid,
+        startState = StatePosition(self.grid,
                                    self.start,
                                    0,
                                    self.start,
@@ -203,33 +198,33 @@ class AStar_Solver:
             closestChild = self.priorityQueue.get()[1]
 
             # create the children for this closest child
-            closestChild.createChildren()
+            closestChild.createChildren(self.visited)
 
             # add the closest child to the visited list
             self.visited.append(closestChild.position)
 
             # check for all children if it is already in children
             for child in closestChild.children:
-                if child.position not in self.visited:
 
-                    # if distance is 0 child is goal
-                    if not child.dist:
-                        self.path = child.path
-                        break
+                # check if child is goal
+                if child.dist == 0:
+                    self.path = child.path
+                    break
 
-                    # add child to children list
-                    self.priorityQueue.put((child.dist, child))
+                # add child to children list
+                self.priorityQueue.put((child.rating, child))
 
         # if no path was found give error message
-        if not self.path:
-            "Goal of " + self.goal + " is not possible."
+        if len(self.path) == 0:
+            print "Goal is not possible."
+            return None
 
         # return the path that was found
         return self.path
 
 def create_print(filename):
     """"
-    takes a string as argument that holds path to a csv file
+    takes a string as argument that holds the path to a csv file
     copies the contents of the csv file into a list of position classes
     """
     file = open(filename, 'rb')
@@ -242,6 +237,11 @@ def create_print(filename):
     return outputlist
 
 def create_netlist(filename):
+    """"
+    takes a string as argument that holds the path to a csv file
+    copies the contents of the csv file into a list of tuples
+    the tuples map to positions in a list made by create_print
+    """
     file = open(filename, 'rb')
     csvfile = csv.reader(file)
     netlist = []
@@ -253,44 +253,61 @@ def create_netlist(filename):
 ##====================
 ## MAIN
 
-print1 =create_print('print1.csv')
-# print2 = create_print('print2.csv')
-netlist1 = create_netlist('netlist1.csv')
-
-# print
-# print print1[netlist1[0][0]].x, print1[netlist1[0][0]].y, print1[netlist1[0][0]].z
-# print print1[netlist1[0][1]].x, print1[netlist1[0][1]].y, print1[netlist1[0][1]].z
-# print
-
-# for elem in netlist1:
-#     solver = AStar_Solver(print1[int(elem[0])-1], print1[int(elem[1])-1])
-
-pos1 = Position()
-pos2 = Position(0,1,1)
-print pos1.getDist(pos2)
-
-grid = Grid(17,12,7)
-
-# start1 = print1[netlist1[0][0]]
-# goal1 = print1[netlist1[0][1]]
-#
-# start2 = print1[netlist1[1][0]]
-# goal2 = print1[netlist1[1][1]]
-
 print 'running...'
+print
 
-length = 0
+# initialize board
+gates = create_print('print1.csv')
+netlist = create_netlist('netlist1.csv')
+grid = Grid(gates, 17, 12)
+
+# total length necessary to connect gates
+total_length = 0
+
+# list of all found paths
 all_paths = []
-for connection in netlist1:
-    a = AStar_Solver(grid, print1[connection[0]], print1[connection[1]])
-    a.Solve()
+
+count = 1
+
+# run A-Star solver on entire board
+for connection in netlist:
+
+    # initialize solver
+    a = AStar_Solver(grid, gates[connection[0]], gates[connection[1]])
+
+    # if no solution was found for current path, stop
+    if not a.Solve():
+        break
+
+    # log progress
+    print 'number of paths found: ', count, '/', len(netlist)
+
+    # add found path to list of paths
     all_paths.append(a.path)
+
+    # add found path to list of walls
     grid.walls += a.path
-    length += len(a.path) - 1
-    all_paths.append(a.path)
 
-print length
-for elem in all_paths:
-    print elem
+    # change total length of paths
+    total_length += len(a.path) - 1
 
+    count += 1
+
+
+# print out results
+count = 1
+for path in all_paths:
+
+    # print length of individual paths
+    print 'length of path #', count, ': ', len(path) - 1
+
+    # print positions in individual paths
+    for position in path:
+        print position.x, position.y, position.z
+    count += 1
+
+# print total length
+print 'The total length is: ', total_length
+
+print
 print 'done.'
