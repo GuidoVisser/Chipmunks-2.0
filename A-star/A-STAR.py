@@ -7,6 +7,9 @@ Er wordt nog geen regening gehouden met obstakels en de randen van de grid.
 Tot nu toe wordt de Position class gebruikt om posities op de grid op te slaan,
 maar in de toekomst willen we naar de GridPosition class, omdat we dan simpel kunnen bijhouden welke
 punten wel en niet toegankelijk zijn voor volgende paden
+
+TODO:
+de cost van posities naast gates moet hoger zijn dan normale posities
 """
 
 import csv
@@ -84,13 +87,15 @@ class Grid(object):
 
 class State(object):
     def __init__(self, grid, position, parent,
-                 start=Position(0, 0, 0), goal=Position(0, 0, 0)):
+                 start=Position(0, 0, 0), goal=Position(0, 0, 0), dynamic_cost=0, static_cost=0):
         self.children = []
         self.parent = parent
         self.position = position
         self.grid = grid
         self.dist = 0
         self.rating = 0
+        self.dynamic_cost = dynamic_cost
+        self.static_cost = static_cost
         if parent:
             self.path = parent.path[:]
             self.path.append(position)
@@ -107,14 +112,14 @@ class State(object):
 
 class StatePosition(State):
     def __init__(self, grid, position, parent,
-                 start=Position(0, 0, 0), goal=Position(0, 0, 0)):
-        super(StatePosition, self).__init__(grid, position, parent, start, goal)
+                 start=Position(0, 0, 0), goal=Position(0, 0, 0), dynamic_cost=0, static_cost=0):
+        super(StatePosition, self).__init__(grid, position, parent, start, goal, dynamic_cost, static_cost)
 
         # distance to goal
         self.dist = self.position.getDist(self.goal)
 
         # children are rated on distance to goal plus distance to start
-        self.rating = self.dist + self.position.getDist(self.start)
+        self.rating = self.dist * 10 + self.position.getDist(self.start) * 10 + self.dynamic_cost + self.static_cost
 
     def createChildren(self, visited_list):
         if not self.children:
@@ -153,18 +158,16 @@ class StatePosition(State):
                                                  self.position + Position(0, 0, -1),
                                                  self,
                                                  self.start,
-                                                 self.goal))
+                                                 self.goal,
+                                                 5))
 
             # check if the position of the direct child is available
             for child in direct_children:
                 if child.dist == 0:
                     self.children.append(child)
                 else:
-                    if not child.position.inList(self.grid.walls):
-                        if not child.position.inList(visited_list):
-                            if not child.position.inList(self.grid.gates):
-                                self.children.append(child)
-            # print self.children
+                    if not child.position.inList(self.grid.walls) and not child.position.inList(visited_list) and not child.position.inList(self.grid.gates):
+                        self.children.append(child)
 
 
 class AStar_Solver:
@@ -197,6 +200,14 @@ class AStar_Solver:
             # The closest child is the one with the shortest distance to goal
             closestChild = self.priorityQueue.get()[1]
 
+            # reset extra cost of all positions
+            dummie_queue = PriorityQueue()
+            while not self.priorityQueue.empty():
+                item = self.priorityQueue.get()[1]
+                item.extra_cost = 0
+                dummie_queue.put((item.rating, item))
+            self.priorityQueue = dummie_queue
+
             # create the children for this closest child
             closestChild.createChildren(self.visited)
 
@@ -227,13 +238,19 @@ def create_print(filename):
     takes a string as argument that holds the path to a csv file
     copies the contents of the csv file into a list of position classes
     """
-    file = open(filename, 'rb')
-    outputlist = []
-    csvfile = csv.reader(file)
-    for row in csvfile:
-        if row[0] != 'ID':
-            outputlist.append(Position(int(row[1]), int(row[2]), int(row[3])))
-    file.close()
+    with open(filename, 'rb') as file:
+
+        # check files extension
+        if not file.endswith('.csv'):
+            raise TypeError('File is not a .csv file')
+
+        # add coordinates in file to list
+        outputlist = []
+        csvfile = csv.DictReader(file)
+        for row in csvfile:
+            outputlist.append(Position(int(row['x']), int(row['y']), int(row['z'])))
+
+    # return list of positions
     return outputlist
 
 def create_netlist(filename):
@@ -242,12 +259,19 @@ def create_netlist(filename):
     copies the contents of the csv file into a list of tuples
     the tuples map to positions in a list made by create_print
     """
-    file = open(filename, 'rb')
-    csvfile = csv.reader(file)
-    netlist = []
-    for row in csvfile:
-        netlist.append((int(row[0]), int(row[1])))
-    file.close()
+    with open(filename, 'rb') as file:
+
+        # check files extension
+        if not file.endswith('csv'):
+            raise TypeError('File is not a .csv file')
+
+        # add connections in file to list
+        csvfile = csv.reader(file)
+        netlist = []
+        for row in csvfile:
+            netlist.append((int(row[0]), int(row[1])))
+
+    # return list of tuples
     return netlist
 
 ##====================
@@ -261,6 +285,14 @@ gates = create_print('print1.csv')
 netlist = create_netlist('netlist1.csv')
 grid = Grid(gates, 17, 12)
 
+queue = PriorityQueue()
+sorted_netlist = []
+for elem in netlist:
+    queue.put((gates[elem[0]].getDist(gates[elem[1]]), elem))
+
+for i in xrange(0, len(netlist)):
+    sorted_netlist.append(queue.get()[1])
+
 # total length necessary to connect gates
 total_length = 0
 
@@ -270,7 +302,7 @@ all_paths = []
 count = 1
 
 # run A-Star solver on entire board
-for connection in netlist:
+for connection in sorted_netlist:
 
     # initialize solver
     a = AStar_Solver(grid, gates[connection[0]], gates[connection[1]])
@@ -280,7 +312,7 @@ for connection in netlist:
         break
 
     # log progress
-    print 'number of paths found: ', count, '/', len(netlist)
+    print 'number of paths found: ', count, '/', len(sorted_netlist)
 
     # add found path to list of paths
     all_paths.append(a.path)
