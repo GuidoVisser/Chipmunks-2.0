@@ -24,7 +24,7 @@ def LocationChip(chip):
         a = np.where(board == chip)
         y = a[0]
         x = a[1]
-    return [y[0]][x[0]]
+    return y, x
 
 
 
@@ -44,7 +44,7 @@ def DistanceChips(chip1,chip2):
     (x2,y2) = LocationChip(chip2)
     print abs(x1 - x2) + abs(y2-y1)
 
-# DistanceChips(1,4)
+DistanceChips(1,4)
 
 def DistanceY(chip1, chip2):
     (x1,y1) = LocationChip(chip1)
@@ -53,10 +53,10 @@ def DistanceY(chip1, chip2):
 
 
 
-def MakeLine(chip1, chip2):
-    Line = []
-    board = MakeBoard2D()
-    while(DistanceY(LocationChip(chip1),LocationChip(chip2)) != 0):
+#def MakeLine(chip1, chip2):
+#    Line = []
+#    board = MakeBoard2D()
+#    while(DistanceY(LocationChip(chip1),LocationChip(chip2)) != 0):
 
 
     # MoveX()
@@ -67,12 +67,8 @@ def MakeLine(chip1, chip2):
 #     y = 2
 #     x += 1
 
-def MoveY(board[x][y]):
-    board[x] = 0
-    board[y] += 1
-    print board[x][y]
-    return board[x][y]
-
-
-
-
+#def MoveY(board[x][y]):
+#    board[x] = 0
+#    board[y] += 1
+#    print board[x][y]
+#    return board[x][y]

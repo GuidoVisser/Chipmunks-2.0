@@ -1,17 +1,18 @@
 """"
 README:
 De afstand tussen twee posities, in 3D, is delta_x plus delta_y plus delta_z
-
 Dit programma rekent het kortste pad uit tussen twee objecten.
 Er wordt nog geen regening gehouden met obstakels en de randen van de grid.
 Tot nu toe wordt de Position class gebruikt om posities op de grid op te slaan,
 maar in de toekomst willen we naar de GridPosition class, omdat we dan simpel kunnen bijhouden welke
 punten wel en niet toegankelijk zijn voor volgende paden
-
 TODO:
 de cost van posities naast gates moet hoger zijn dan normale posities
 """
 
+from mpl_toolkits.mplot3d import proj3d
+import matplotlib.pyplot as plt
+import numpy as np
 import csv
 from Queue import PriorityQueue
 
@@ -241,8 +242,8 @@ def create_print(filename):
     with open(filename, 'rb') as file:
 
         # check files extension
-        if not file.endswith('.csv'):
-            raise TypeError('File is not a .csv file')
+        #if not file.endswith('.csv'):
+        #    raise TypeError('File is not a .csv file')
 
         # add coordinates in file to list
         outputlist = []
@@ -262,8 +263,8 @@ def create_netlist(filename):
     with open(filename, 'rb') as file:
 
         # check files extension
-        if not file.endswith('csv'):
-            raise TypeError('File is not a .csv file')
+        #if not file.endswith('csv'):
+        #    raise TypeError('File is not a .csv file')
 
         # add connections in file to list
         csvfile = csv.reader(file)
@@ -274,6 +275,113 @@ def create_netlist(filename):
     # return list of tuples
     return netlist
 
+def visualise_board(filename, width, height, moves, paths_length, total_length):
+    """
+    visualise gates
+    """
+    def drawScatter(X):
+        fig = plt.figure()
+        ax = fig.gca(projection = '3d')
+        
+        # load gate data
+        ax.scatter(X[:, 0], X[:, 1], X[:, 2], c = 'r', marker = 'o', s = 60, alpha = 1)
+        
+        # set dimensions
+        ax.set_xlim(0, width)
+        ax.set_ylim(0, height)
+        ax.set_zlim(0, 6)
+        
+        # show plot without axes
+        ax.axis('off')
+        plt.show()
+    
+        def distance(point, event):
+            # Project 3d data space to 2d data space
+            x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], plt.gca().get_proj())
+            # Convert 2d data space to 2d screen space
+            x3, y3 = ax.transData.transform((x2, y2))
+    
+            return np.sqrt ((x3 - event.x)**2 + (y3 - event.y)**2)
+    
+    
+        def calcClosestDatapoint(X, event):
+            """
+            
+            """
+            distances = [distance (X[i, 0:3], event) for i in range(X.shape[0])]
+            return np.argmin(distances)
+    
+    
+        def annotatePlot(X, index, event):
+            """Create popover label in 3d chart
+    
+            Args:
+                X (np.array) - array of points, of shape (numPoints, 3)
+                index (int) - index (into points array X) of item which should be printed
+            Returns:
+                None
+            """
+            # If we have previously displayed another label, remove it first
+            if hasattr(annotatePlot, 'label'):
+                annotatePlot.label.remove()
+            #if event.x < 300:
+                #annotatePlot.label.remove()
+            # Get data point from array of points X, at position index
+            x2, y2, _ = proj3d.proj_transform(X[index, 0], X[index, 1], X[index, 2], ax.get_proj())
+            annotatePlot.label = plt.annotate( "%d" % (index + 1),
+                    xy = (x2, y2), xytext = (-20, 20), textcoords = 'offset points', ha = 'right', va = 'bottom',
+                    bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5),
+                    arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0'))
+            fig.canvas.draw()
+                        
+            
+        def onMouseMotion(event):
+            closestIndex = calcClosestDatapoint(X, event)
+            annotatePlot (X, closestIndex, event)
+        
+        fig.canvas.mpl_connect('motion_notify_event', onMouseMotion)  # on mouse motion
+        
+    
+    def drawXYplane(width, height):
+            for line in range(0, width+1): 
+                plt.plot([line, line], [0, height], color = 'black', lw = 1, alpha = 0.5)
+            for line in range(0, height+1):
+                plt.plot([0, width], [line, line], color = 'black', lw =1, alpha = 0.5)
+        
+    def drawMoves(moves, paths_length, total_length):
+        i, j = 1, 0
+        k = int(paths_length[j])
+        print 'paths_length', k
+        while i <= total_length:
+            plt.plot([moves[i-1][0], moves[i][0]], [moves[i-1][1], moves[i][1]], [moves[i-1][2], moves[i][2]], color = 'black', lw = 2, alpha = 1)
+            #print moves[i-1][0], moves[i-1][1], moves[i-1][2]
+            #print moves[i][0], moves[i][1], moves[i][2]
+            if i == k:
+                i += 1
+                j += 1
+                k += paths_length[j] + 1
+                print 'paths_length', k
+            i += 1
+        
+        
+    with open(filename, 'rb') as file:
+        ID, x, y, z = [], [], [], []
+        X = []
+        csvfile = csv.DictReader(file)
+        for row in csvfile:
+            x.append(int(row['x']))
+            y.append(int(row['y']))
+            z.append(int(row['z']))
+            ID.append(int(row['ID']))
+        
+        array = np.array((x, y, z, ID))
+        X = np.transpose(array)
+        print X[3]
+               
+    drawScatter(X)
+    drawMoves(moves, paths_length, total_length)
+    drawXYplane(width, height)
+    
 ##====================
 ## MAIN
 
@@ -281,9 +389,11 @@ print 'running...'
 print
 
 # initialize board
+width = 17
+height = 12
 gates = create_print('print1.csv')
 netlist = create_netlist('netlist1.csv')
-grid = Grid(gates, 17, 12)
+grid = Grid(gates, width, height)
 
 queue = PriorityQueue()
 sorted_netlist = []
@@ -292,7 +402,8 @@ for elem in netlist:
 
 for i in xrange(0, len(netlist)):
     sorted_netlist.append(queue.get()[1])
-
+ 
+print sorted_netlist    
 # total length necessary to connect gates
 total_length = 0
 
@@ -328,18 +439,32 @@ for connection in sorted_netlist:
 
 # print out results
 count = 1
+paths_length, moves_x, moves_y, moves_z = [], [], [], []
 for path in all_paths:
 
     # print length of individual paths
     print 'length of path #', count, ': ', len(path) - 1
+    paths_length.append(len(path) -1)
 
     # print positions in individual paths
     for position in path:
         print position.x, position.y, position.z
+        moves_x.append(position.x)
+        moves_y.append(position.y)
+        moves_z.append(position.z)
     count += 1
+
+array = np.array((moves_x, moves_y, moves_z))
+moves = np.transpose(array)
+print paths_length
+
+#for index in range(len(path_length)):
+#    print path_length(index)
 
 # print total length
 print 'The total length is: ', total_length
 
-print
 print 'done.'
+
+# visualise board
+visualise_board('print1.csv', width, height, moves, paths_length, total_length)
