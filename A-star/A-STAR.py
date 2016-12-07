@@ -16,10 +16,12 @@ import numpy as np
 import csv
 from Queue import PriorityQueue
 
+
 class Position(object):
     """
     A Position represents a location in a two-dimensional room.
     """
+
     def __init__(self, x=0, y=0, z=0):
         """
         Initializes a position with coordinates (x, y, z).
@@ -54,30 +56,28 @@ class Position(object):
                     if pos.z == self.z:
                         return True
         return False
-    
-    def getX(self):
-        return self.x
 
 
 class Grid(object):
     """"
     Grid of points that are either a wall, a gate or free space
     """
-    def __init__(self, gates, max_x, max_y, max_z = 7):
+
+    def __init__(self, gates, max_x, max_y, max_z=7):
         self.walls = []
         self.gates = gates
-        for x in xrange(-1, max_x+2):
-            for y in xrange(-1, max_y+2):
+        for x in xrange(-1, max_x + 2):
+            for y in xrange(-1, max_y + 2):
                 self.walls.append(Position(x, y, -1))
-                self.walls.append(Position(x, y, max_z+1))
-        for y in xrange(-1, max_y+2):
-            for z in xrange(0, max_z+1):
+                self.walls.append(Position(x, y, max_z + 1))
+        for y in xrange(-1, max_y + 2):
+            for z in xrange(0, max_z + 1):
                 self.walls.append(Position(-1, y, z))
-                self.walls.append(Position(max_x+1, y, z))
-        for x in xrange(0, max_x+1):
-            for z in xrange(0, max_z+1):
+                self.walls.append(Position(max_x + 1, y, z))
+        for x in xrange(0, max_x + 1):
+            for z in xrange(0, max_z + 1):
                 self.walls.append(Position(x, -1, z))
-                self.walls.append(Position(x, max_y+1, z))
+                self.walls.append(Position(x, max_y + 1, z))
 
 
 class State(object):
@@ -114,10 +114,11 @@ class StatePosition(State):
         self.dist = self.position.getDist(self.goal)
 
         # children are rated on distance to goal plus distance to start
-        self.rating = self.dist * 10 + (len(self.path)-1) * 10 + self.dynamic_cost + self.static_cost
+        self.rating = self.dist * 10 + (len(self.path) - 1) * 10 + self.dynamic_cost + self.static_cost
         for gate in gates:
             if (self.position.getDist(gate) == 1):
                 self.rating += 20
+
     def createChildren(self, visited_list):
         if not self.children:
             direct_children = []
@@ -163,7 +164,8 @@ class StatePosition(State):
                 if child.dist == 0:
                     self.children.append(child)
                 else:
-                    if not child.position.inList(self.grid.walls) and not child.position.inList(visited_list) and not child.position.inList(self.grid.gates):
+                    if not child.position.inList(self.grid.walls) and not child.position.inList(
+                            visited_list) and not child.position.inList(self.grid.gates):
                         self.children.append(child)
 
 
@@ -225,11 +227,12 @@ class AStar_Solver:
         # if no path was found give error message
         if len(self.path) == 0:
             print "Goal is not possible."
-            #output.write('Goal is not possible.\n')
-            return None        
+            # output.write('Goal is not possible.\n')
+            return None
 
-        # return the path that was found
+            # return the path that was found
         return self.path
+
 
 def create_print(filename):
     """"
@@ -237,20 +240,20 @@ def create_print(filename):
     copies the contents of the csv file into a list of position classes
     """
     with open(filename, 'rb') as printfile:
-
         # check files extension
-        #if not file.endswith('.csv'):
-        #    raise TypeError('File is not a .csv file')
+        if not filename.endswith('.csv'):
+           raise TypeError('File is not a .csv file')
 
         # add coordinates in file to list
         outputlist = []
         csvfile = csv.DictReader(printfile)
         for row in csvfile:
             outputlist.append(Position(int(row['x']), int(row['y']), int(row['z'])))
-    
+
         printfile.close()
     # return list of positions
     return outputlist
+
 
 def create_netlist(filename):
     """"
@@ -259,61 +262,60 @@ def create_netlist(filename):
     the tuples map to positions in a list made by create_print
     """
     with open(filename, 'rb') as netlistfile:
-
         # check files extension
-        #if not file.endswith('csv'):
-        #    raise TypeError('File is not a .csv file')
+        if not filename.endswith('csv'):
+           raise TypeError('File is not a .csv file')
 
         # add connections in file to list
         csvfile = csv.reader(netlistfile)
         netlist = []
         for row in csvfile:
             netlist.append((int(row[0]), int(row[1])))
-    
+
         netlistfile.close()
     # return list of tuples
     return netlist
+
 
 def visualise_board(filename, width, height, moves, paths_length, total_length):
     """
     visualise gates
     """
+
     def drawScatter(X):
         fig = plt.figure()
-        ax = fig.gca(projection = '3d')
-        
+        ax = fig.gca(projection='3d')
+
         # load gate data
-        ax.scatter(X[:, 0], X[:, 1], X[:, 2], c = 'r', marker = 'o', s = 60, alpha = 1)
-        
+        ax.scatter(X[:, 0], X[:, 1], X[:, 2], c='r', marker='o', s=60, alpha=1)
+
         # set dimensions
         ax.set_xlim(0, width)
         ax.set_ylim(0, height)
         ax.set_zlim(0, 6)
-        
+
         # show plot without axes
         ax.axis('off')
         plt.show()
-    
+
         def distance(point, event):
             # Project 3d data space to 2d data space
             x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], plt.gca().get_proj())
             # Convert 2d data space to 2d screen space
             x3, y3 = ax.transData.transform((x2, y2))
-    
-            return np.sqrt ((x3 - event.x)**2 + (y3 - event.y)**2)
-    
-    
+
+            return np.sqrt((x3 - event.x) ** 2 + (y3 - event.y) ** 2)
+
         def calcClosestDatapoint(X, event):
             """
-            
+
             """
-            distances = [distance (X[i, 0:3], event) for i in range(X.shape[0])]
+            distances = [distance(X[i, 0:3], event) for i in range(X.shape[0])]
             return np.argmin(distances)
-    
-    
+
         def annotatePlot(X, index, event):
             """Create popover label in 3d chart
-    
+
             Args:
                 X (np.array) - array of points, of shape (numPoints, 3)
                 index (int) - index (into points array X) of item which should be printed
@@ -323,42 +325,42 @@ def visualise_board(filename, width, height, moves, paths_length, total_length):
             # If we have previously displayed another label, remove it first
             if hasattr(annotatePlot, 'label'):
                 annotatePlot.label.remove()
-            #if event.x < 300:
-                #annotatePlot.label.remove()
+                # if event.x < 300:
+                # annotatePlot.label.remove()
             # Get data point from array of points X, at position index
             x2, y2, _ = proj3d.proj_transform(X[index, 0], X[index, 1], X[index, 2], ax.get_proj())
-            annotatePlot.label = plt.annotate( "%d" % (index + 1),
-                    xy = (x2, y2), xytext = (-20, 20), textcoords = 'offset points', ha = 'right', va = 'bottom',
-                    bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5),
-                    arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0'))
+            annotatePlot.label = plt.annotate("%d" % (index + 1),
+                                              xy=(x2, y2), xytext=(-20, 20), textcoords='offset points', ha='right',
+                                              va='bottom',
+                                              bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
+                                              arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
             fig.canvas.draw()
-                        
-            
+
         def onMouseMotion(event):
             closestIndex = calcClosestDatapoint(X, event)
-            annotatePlot (X, closestIndex, event)
-        
+            annotatePlot(X, closestIndex, event)
+
         fig.canvas.mpl_connect('motion_notify_event', onMouseMotion)  # on mouse motion
-        
-    
+
     def drawXYplane(width, height):
-            for line in range(0, width+1): 
-                plt.plot([line, line], [0, height], color = 'black', lw = 1, alpha = 0.5)
-            for line in range(0, height+1):
-                plt.plot([0, width], [line, line], color = 'black', lw =1, alpha = 0.5)
-        
+        for line in range(0, width + 1):
+            plt.plot([line, line], [0, height], color='black', lw=1, alpha=0.5)
+        for line in range(0, height + 1):
+            plt.plot([0, width], [line, line], color='black', lw=1, alpha=0.5)
+
     def drawMoves(moves, paths_length, total_length):
         i, j, count_length = 1, 0, 0
         k = int(paths_length[j])
         while count_length < total_length:
-            plt.plot([moves[i-1][0], moves[i][0]], [moves[i-1][1], moves[i][1]], [moves[i-1][2], moves[i][2]], color = 'black', lw = 2, alpha = 1)
+            plt.plot([moves[i - 1][0], moves[i][0]], [moves[i - 1][1], moves[i][1]], [moves[i - 1][2], moves[i][2]],
+                     color='black', lw=2, alpha=1)
             count_length += 1
             if (i == k) and (j < len(paths_length) - 1):
                 i += 1
                 j += 1
                 k += paths_length[j] + 1
             i += 1
-        
+
     with open(filename, 'rb') as printfile:
         ID, x, y, z = [], [], [], []
         X = []
@@ -368,16 +370,17 @@ def visualise_board(filename, width, height, moves, paths_length, total_length):
             y.append(int(row['y']))
             z.append(int(row['z']))
             ID.append(int(row['ID']))
-        
+
         array = np.array((x, y, z, ID))
         X = np.transpose(array)
-    
+
         printfile.close()
-               
+
     drawScatter(X)
     drawMoves(moves, paths_length, total_length)
     drawXYplane(width, height)
-    
+
+
 ##====================
 ## MAIN
 
@@ -438,9 +441,9 @@ paths_length, moves_x, moves_y, moves_z = [], [], [], []
 for path in all_paths:
 
     # print length of individual paths
-    #print 'length of path #', count, ': ', len(path) - 1
+    # print 'length of path #', count, ': ', len(path) - 1
     output.write('Length of path # %s : %s\n' % (count, (len(path) - 1)))
-    paths_length.append(len(path) -1)
+    paths_length.append(len(path) - 1)
 
     # print positions in individual paths
     for position in path:
@@ -456,7 +459,7 @@ moves = np.transpose(array)
 print 'Number of paths found: %s / %s' % (count - 1, len(sorted_netlist))
 output.write('Number of paths found: %s / %s\n' % (count - 1, len(sorted_netlist)))
 
-#for index in range(len(path_length)):
+# for index in range(len(path_length)):
 #    print path_length(index)
 
 # print total length
