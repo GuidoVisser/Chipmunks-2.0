@@ -54,15 +54,9 @@ class Position(object):
                     if pos.z == self.z:
                         return True
         return False
-
+    
     def getX(self):
         return self.x
-
-    def getY(self):
-        return self.y
-
-    def getZ(self):
-        return self.z
 
 
 class Grid(object):
@@ -120,8 +114,10 @@ class StatePosition(State):
         self.dist = self.position.getDist(self.goal)
 
         # children are rated on distance to goal plus distance to start
-        self.rating = self.dist * 10 + self.position.getDist(self.start) * 10 + self.dynamic_cost + self.static_cost
-
+        self.rating = self.dist * 10 + (len(self.path)-1) * 10 + self.dynamic_cost + self.static_cost
+        for gate in gates:
+            if (self.position.getDist(gate) == 1):
+                self.rating += 20
     def createChildren(self, visited_list):
         if not self.children:
             direct_children = []
@@ -200,7 +196,7 @@ class AStar_Solver:
 
             # The closest child is the one with the shortest distance to goal
             closestChild = self.priorityQueue.get()[1]
-
+            """
             # reset extra cost of all positions
             dummie_queue = PriorityQueue()
             while not self.priorityQueue.empty():
@@ -208,7 +204,7 @@ class AStar_Solver:
                 item.extra_cost = 0
                 dummie_queue.put((item.rating, item))
             self.priorityQueue = dummie_queue
-
+            """
             # create the children for this closest child
             closestChild.createChildren(self.visited)
 
@@ -229,7 +225,8 @@ class AStar_Solver:
         # if no path was found give error message
         if len(self.path) == 0:
             print "Goal is not possible."
-            return None
+            #output.write('Goal is not possible.\n')
+            return None        
 
         # return the path that was found
         return self.path
@@ -239,7 +236,7 @@ def create_print(filename):
     takes a string as argument that holds the path to a csv file
     copies the contents of the csv file into a list of position classes
     """
-    with open(filename, 'rb') as file:
+    with open(filename, 'rb') as printfile:
 
         # check files extension
         #if not file.endswith('.csv'):
@@ -247,10 +244,11 @@ def create_print(filename):
 
         # add coordinates in file to list
         outputlist = []
-        csvfile = csv.DictReader(file)
+        csvfile = csv.DictReader(printfile)
         for row in csvfile:
             outputlist.append(Position(int(row['x']), int(row['y']), int(row['z'])))
-
+    
+        printfile.close()
     # return list of positions
     return outputlist
 
@@ -260,18 +258,19 @@ def create_netlist(filename):
     copies the contents of the csv file into a list of tuples
     the tuples map to positions in a list made by create_print
     """
-    with open(filename, 'rb') as file:
+    with open(filename, 'rb') as netlistfile:
 
         # check files extension
         #if not file.endswith('csv'):
         #    raise TypeError('File is not a .csv file')
 
         # add connections in file to list
-        csvfile = csv.reader(file)
+        csvfile = csv.reader(netlistfile)
         netlist = []
         for row in csvfile:
             netlist.append((int(row[0]), int(row[1])))
-
+    
+        netlistfile.close()
     # return list of tuples
     return netlist
 
@@ -349,25 +348,21 @@ def visualise_board(filename, width, height, moves, paths_length, total_length):
                 plt.plot([0, width], [line, line], color = 'black', lw =1, alpha = 0.5)
         
     def drawMoves(moves, paths_length, total_length):
-        i, j = 1, 0
+        i, j, count_length = 1, 0, 0
         k = int(paths_length[j])
-        print 'paths_length', k
-        while i <= total_length:
+        while count_length < total_length:
             plt.plot([moves[i-1][0], moves[i][0]], [moves[i-1][1], moves[i][1]], [moves[i-1][2], moves[i][2]], color = 'black', lw = 2, alpha = 1)
-            #print moves[i-1][0], moves[i-1][1], moves[i-1][2]
-            #print moves[i][0], moves[i][1], moves[i][2]
-            if i == k:
+            count_length += 1
+            if (i == k) and (j < len(paths_length) - 1):
                 i += 1
                 j += 1
                 k += paths_length[j] + 1
-                print 'paths_length', k
             i += 1
         
-        
-    with open(filename, 'rb') as file:
+    with open(filename, 'rb') as printfile:
         ID, x, y, z = [], [], [], []
         X = []
-        csvfile = csv.DictReader(file)
+        csvfile = csv.DictReader(printfile)
         for row in csvfile:
             x.append(int(row['x']))
             y.append(int(row['y']))
@@ -376,7 +371,8 @@ def visualise_board(filename, width, height, moves, paths_length, total_length):
         
         array = np.array((x, y, z, ID))
         X = np.transpose(array)
-        print X[3]
+    
+        printfile.close()
                
     drawScatter(X)
     drawMoves(moves, paths_length, total_length)
@@ -386,7 +382,6 @@ def visualise_board(filename, width, height, moves, paths_length, total_length):
 ## MAIN
 
 print 'running...'
-print
 
 # initialize board
 width = 17
@@ -402,8 +397,7 @@ for elem in netlist:
 
 for i in xrange(0, len(netlist)):
     sorted_netlist.append(queue.get()[1])
- 
-print sorted_netlist    
+
 # total length necessary to connect gates
 total_length = 0
 
@@ -422,9 +416,6 @@ for connection in sorted_netlist:
     if not a.Solve():
         break
 
-    # log progress
-    print 'number of paths found: ', count, '/', len(sorted_netlist)
-
     # add found path to list of paths
     all_paths.append(a.path)
 
@@ -436,6 +427,10 @@ for connection in sorted_netlist:
 
     count += 1
 
+paths_solved = len(all_paths)
+filename = 'result%s_%s.txt' % (paths_solved, total_length)
+output = open(filename, "w")
+output.write('%s\n' % (sorted_netlist))
 
 # print out results
 count = 1
@@ -443,28 +438,35 @@ paths_length, moves_x, moves_y, moves_z = [], [], [], []
 for path in all_paths:
 
     # print length of individual paths
-    print 'length of path #', count, ': ', len(path) - 1
+    #print 'length of path #', count, ': ', len(path) - 1
+    output.write('Length of path # %s : %s\n' % (count, (len(path) - 1)))
     paths_length.append(len(path) -1)
 
     # print positions in individual paths
     for position in path:
-        print position.x, position.y, position.z
         moves_x.append(position.x)
         moves_y.append(position.y)
         moves_z.append(position.z)
+        output.write('%s %s %s\n' % (position.x, position.y, position.z))
     count += 1
 
 array = np.array((moves_x, moves_y, moves_z))
 moves = np.transpose(array)
-print paths_length
+
+print 'Number of paths found: %s / %s' % (count - 1, len(sorted_netlist))
+output.write('Number of paths found: %s / %s\n' % (count - 1, len(sorted_netlist)))
 
 #for index in range(len(path_length)):
 #    print path_length(index)
 
 # print total length
 print 'The total length is: ', total_length
+output.write('The total length is: %s\n' % (total_length))
 
 print 'done.'
 
 # visualise board
 visualise_board('print1.csv', width, height, moves, paths_length, total_length)
+
+output.close()
+print gates[0].getX()
