@@ -82,6 +82,7 @@ class Grid(object):
         self.walls = []
         self.gates = gates
         self.gates_children = []
+        self.gates_grandchildren = []
         for x in xrange(-1, max_x + 2):
             for y in xrange(-1, max_y + 2):
                 self.walls.append(Position(x, y, -1))
@@ -96,25 +97,27 @@ class Grid(object):
                 self.walls.append(Position(x, max_y + 1, z))
         for gate in gates:
             self.gates_children += gate.adjacent()
-
-
+        for child in self.gates_children:
+            grandchildren = child.adjacent()
+            for grandchild in grandchildren:
+                if not grandchild.inList(self.gates_grandchildren):
+                    self.gates_grandchildren.append(grandchild)
 
 class State(object):
     def __init__(self, grid, position, parent,
-                 start=Position(0, 0, 0), goal=Position(0, 0, 0), dynamic_cost=0, static_cost=0):
+                 start=Position(0, 0, 0), goal=Position(0, 0, 0)):
         self.children = []
         self.parent = parent
         self.position = position
         self.grid = grid
         self.dist = 0
-        self.cost = 0
+        self.static_cost = 0
         self.rating = 0
-        self.dynamic_cost = dynamic_cost
-        self.static_cost = static_cost
+        self.dynamic_cost = 0
         if parent:
             self.path = parent.path[:]
             self.path.append(position)
-            self.cost = parent.cost
+            self.static_cost = parent.static_cost
             self.start = parent.start
             self.goal = parent.goal
         else:
@@ -128,16 +131,20 @@ class State(object):
 
 class StatePosition(State):
     def __init__(self, grid, position, parent,
-                 start=Position(0, 0, 0), goal=Position(0, 0, 0), dynamic_cost=0, static_cost=0):
-        super(StatePosition, self).__init__(grid, position, parent, start, goal, dynamic_cost, static_cost)
+                 start=Position(0, 0, 0), goal=Position(0, 0, 0)):
+        super(StatePosition, self).__init__(grid, position, parent, start, goal)
 
         # distance to goal
         self.dist = self.position.getDist(self.goal)
 
         # children are rated on distance to goal plus distance to start
-        self.rating = self.dist * 10 + self.cost + self.dynamic_cost + self.static_cost
-
-
+        #self.rating = self.dist * 10 + self.static_cost + self.dynamic_cost
+        
+        # add rating if passing gate
+        #for gate in gates:
+        #    if (self.position.getDist(gate) == 1):
+        #        self.rating += 21
+       
     def createChildren(self, visited_list):
         if not self.children:
             adjacent_positions = self.position.adjacent()
@@ -153,9 +160,23 @@ class StatePosition(State):
                 else:
                     if not child.position.inList(self.grid.walls) and not child.position.inList(
                             visited_list) and not child.position.inList(self.grid.gates):
-                        if child.position.inList(self.grid.gates_children):
-                            child.cost = 20
-                        child.cost += 10
+                        #if child.position.inList(self.grid.gates_children):
+                        #    child.cost = 20
+                        
+                        for pos in self.grid.gates_children:
+                            if pos.x == child.position.x:
+                                if pos.y == child.position.y:
+                                    if pos.z == child.position.z:
+                                        child.static_cost += 21
+
+                        for pos in self.grid.gates_grandchildren:
+                            if pos.x == child.position.x:
+                                if pos.y == child.position.y:
+                                    if pos.z == child.position.z:
+                                        child.static_cost += 1
+ 
+                        child.static_cost += 10
+                        child.rating = child.dist * 10 + child.static_cost + child.dynamic_cost
                         self.children.append(child)
 
 
@@ -188,15 +209,7 @@ class AStar_Solver:
 
             # The closest child is the one with the shortest distance to goal
             closestChild = self.priorityQueue.get()[1]
-            """
-            # reset extra cost of all positions
-            dummie_queue = PriorityQueue()
-            while not self.priorityQueue.empty():
-                item = self.priorityQueue.get()[1]
-                item.extra_cost = 0
-                dummie_queue.put((item.rating, item))
-            self.priorityQueue = dummie_queue
-            """
+           
             # create the children for this closest child
             closestChild.createChildren(self.visited)
 
@@ -383,14 +396,23 @@ gates = create_print('print1.csv')
 netlist = create_netlist('netlist1.csv')
 grid = Grid(gates, width, height)
 
+# determine frequency of gates
+freq = [0] * len(gates)
+for line in netlist:
+    for item in line:
+        freq[item] += 1
+print freq
+
 queue = PriorityQueue()
 sorted_netlist = []
-for elem in netlist:
-    queue.put((gates[elem[0]].getDist(gates[elem[1]]), elem))
+#for elem in netlist:
+#    queue.put((gates[elem[0]].getDist(gates[elem[1]]), elem))
 
 for i in xrange(0, len(netlist)):
     sorted_netlist.append(queue.get()[1])
 
+sorted_netlist = [(3,5), (3, 4), (3, 0), (3, 15), (3, 23), (15, 21), (15, 17), (15, 8), (15, 5), (5, 7), (19, 5), (7, 13), (10, 7), (7, 9), (13, 18), (22, 13), (9, 13), (10, 4), (16, 9), (20, 10), (19, 2), (20, 19), (2, 20), (22, 16), (22, 11), (23, 4), (23, 8), (1, 0), ]
+    
 # total length necessary to connect gates
 total_length = 0
 
@@ -404,11 +426,13 @@ for connection in sorted_netlist:
 
     # initialize solver
     a = AStar_Solver(grid, gates[connection[0]], gates[connection[1]])
-
+    
     # if no solution was found for current path, stop
     if not a.Solve():
         break
 
+    print 'Line %s solved, of length %s' % (count, len(a.path))
+    
     # add found path to list of paths
     all_paths.append(a.path)
 
@@ -418,10 +442,10 @@ for connection in sorted_netlist:
     # change total length of paths
     total_length += len(a.path) - 1
 
+    # count amount of paths
     count += 1
 
-paths_solved = len(all_paths)
-filename = 'result%s_%s.txt' % (paths_solved, total_length)
+filename = 'result%s_%s.txt' % (count - 1, total_length)
 output = open(filename, "w")
 output.write('%s\n' % (sorted_netlist))
 
@@ -433,6 +457,7 @@ for path in all_paths:
     # print length of individual paths
     # print 'length of path #', count, ': ', len(path) - 1
     output.write('Length of path # %s : %s\n' % (count, (len(path) - 1)))
+    #print 'Length of  path # %s : %s\n' % (count, (len(path) -1))
     paths_length.append(len(path) - 1)
 
     # print positions in individual paths
@@ -462,4 +487,3 @@ print 'done.'
 visualise_board('print1.csv', width, height, moves, paths_length, total_length)
 
 output.close()
-print gates[0].getX()

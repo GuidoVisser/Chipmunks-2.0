@@ -472,4 +472,3 @@ print 'done.'
 visualise_board('print1.csv', width, height, moves, paths_length, total_length)
 
 output.close()
-print gates[0].getX()
