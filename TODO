@@ -1,0 +1,15 @@
+TODO
+
+- visualisatie in class > kleuren, label fade
+- creëer main, import .py
+- profiler
+- vorm paden vastleggen
+- foutmelding visualisatie
+
+volgorde netlist
+prunen als score van huidige paden plus minimum van resterende paden hoger wordt dan laatste score tot dusver
+
+gate space cost
+
+extra cost = freq ^ n
+n optimaliseren met grid search
