@@ -1,0 +1,18 @@
+Chips & Circuits [TITEL]
+
+Paper by Guido Visser, Laura Veerkamp, Floris Kuipers
+
+--- Introduction of the puzzle and its constraints [print & netlist are given] [no conflicts] [moving in all directions + only up from bottom layer] ---
+
+The chips and circuits problem is a constraint optimization problem. We, a group of three people, were given a puzzle that is built up of two components: a print, and a netlist. The print consists of rectangular matrix of given size with a number of gates placed on points in the grid in a random fashion. The gates are numbered and have to be connected in pairs of two, so one gate connects to another gate. The netlist is a list of tuples of gate-numbers, and indicates which gates have to be connected. The objective is to connect all the gates in the netlist but the lines that connect gates can’t cross or touch one another. Drawing the lines isn’t limited to a 2D-plane (x,y), lines can also be drawn upwards in the z-direction. The height that the z-direction introduces is limited to seven layers. A final note here is that the gates are located on the bottom level which is a border, lines can’t be drawn below the bottom level.
+[paper-indeling ontbreekt nog]
+
+--- Our method for a solution [A* + cost for direction and position of gates] [order of netlist on the basis of gate-frequency] ---
+
+We chose to use an A* algorithm that finds the shortest paths between two points in the matrix. The lines drawn in the matrix this way are considered walls by the algorithm, future connections would have to move around the earlier made connections.
+The A* algorithm we created doesn’t take the shortest route between two points distance-wise, it takes the cheapest path which we influence by introducing certain costs. We made the pathfinding dependent on different factors. First we made movement in the z-direction relatively cheap. This means that if a path is laid out and a wall is encountered the algorithm prefers to avoid the wall by moving over it in the z direction rather then moving around it in the x or y direction. Second we made the intersections that surround each gate more expensive, so our algorithm prefers to stay away from gates while making a connection.
+We enter the netlist into the algorithm and it makes the connections one tuple at a time. This means that the order of the netlist became very important. Our algorithm is order-deterministic, with one connection made at a time and no possibility of changing connections already made. If you accept this limitation as we did you can focus on the order of the netlist, the order in which the connections are made. To this end we have sorted the list on the basis of the gates that occur most in the netlist. We noticed that some gates figure in more connections than other gates given a netlist. We order a netlist on the basis of this frequency, putting connections with gates that occur most frequent at the front.
+
+
+
+
