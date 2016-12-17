@@ -69,6 +69,7 @@ class Grid(object):
         self.walls = []
         self.gates_children = []
         self.gates_grandchildren = []
+        #self.gates_grand_grandchildren = []
 
         for x in xrange(-1, max_x + 2):
             for y in xrange(-1, max_y + 2):
@@ -91,7 +92,14 @@ class Grid(object):
             for grandchild in grandchildren:
                 if not grandchild.inList(self.gates_grandchildren):
                     self.gates_grandchildren.append(grandchild)
-
+        """
+        for child in self.gates_grandchildren:
+            grand_grandchildren = child.adjacent()
+            for grand_grandchild in grand_grandchildren:
+                if not grand_grandchild.inList(self.gates_grand_grandchildren):
+                    self.gates_grand_grandchildren.append(grand_grandchild)
+        """
+        
 class State(object):
     """
     State object for the grid with start-, current- and endposition, parent of child,
@@ -161,7 +169,13 @@ class StatePosition(State):
                                 if pos.y == child.position.y:
                                     if pos.z == child.position.z:
                                         child.cost += 1
- 
+                        """                
+                        for pos in self.grid.gates_grand_grandchildren:
+                            if pos.x == child.position.x:
+                                if pos.y == child.position.y:
+                                    if pos.z == child.position.z:
+                                        child.cost += 1
+                        """
                         child.cost += 10
                         child.rating = child.dist * 10 + child.cost
                         self.children.append(child)

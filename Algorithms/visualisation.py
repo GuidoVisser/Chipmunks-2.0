@@ -49,7 +49,7 @@ def init(width, height, gates, moves, path_lengths, total_length):
         # position and lay-out label
         x2, y2, _ = proj3d.proj_transform(gates[index].x, gates[index].y, gates[index].z, ax.get_proj())
         annotatePlot.label = plt.annotate("%d" % (index + 1), xy=(x2, y2), ha='right', va='bottom', 
-                                          bbox=dict(boxstyle='round,pad=0.3', fc='white', alpha=0.9))
+                                          bbox=dict(boxstyle='round,pad=0.3', fc='white', alpha=0.6))
         fig.canvas.draw()
     
     # draw grid of XY plane            
@@ -68,10 +68,12 @@ def init(width, height, gates, moves, path_lengths, total_length):
         # k is length of j-th item in path lengths, count_length is count for drawn moves
         k = int(path_lengths[j])
         count_length = 0
+        # define path colors
+        colors = ['#96fe8f', '#34db08', '#be9bc6', '#b76f9e', '#da842f', '#6bb8ef', '#d23282', '#0bdd9a', '#aee9cf', '#915c4e', '#f88619', '#6534ac', '#e23131', '#2feac6', '#e5319b', '#f6ac10', '#e06f19', '#fb3f9d', '#ff3a35', '#a5ba20', '#ab4b45', '#c6b95d', '#53910f', '#d720eb', '#666504', '#28e8bf', '#d24ee1', '#833057', '#e6236b', '#112978', '#1bd351', '#cd2c22', '#6ad55d', '#19760d', '#819e95']
         # keep drawing until all moves are drawn
         while count_length < total_length:
             plt.plot([moves[i - 1][0], moves[i][0]], [moves[i - 1][1], moves[i][1]], 
-                     [moves[i - 1][2], moves[i][2]], color='black', lw=2, alpha=1)
+                     [moves[i - 1][2], moves[i][2]], color=colors[j%35], lw=2, alpha=1)
             count_length += 1
             # if path length is reached and j is within scope, skip one move draw
             # (from end of one path to start of the other)
