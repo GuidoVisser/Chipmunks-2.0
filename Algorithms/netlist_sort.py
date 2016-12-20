@@ -38,3 +38,18 @@ def totalfreq_to_length(gates, netlist):
         length_sort = []
     
     return sorted_netlist
+
+def on_length(gates, netlist):
+    queue = PriorityQueue()
+    sorted_netlist = []
+    for elem in netlist:
+        queue.put((gates[elem[0]].getDist(gates[elem[1]]), elem))
+
+    for i in xrange(0, len(netlist)):
+        sorted_netlist.append(queue.get()[1])
+
+    return sorted_netlist
+
+def on_original(gates, netlist):
+    sorted_netlist = netlist
+    return sorted_netlist

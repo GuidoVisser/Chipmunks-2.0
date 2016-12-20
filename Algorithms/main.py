@@ -19,9 +19,10 @@ import netlist_sort
 import visualisation
 import numpy as np
 import winsound
+from time import localtime, strftime
 
 # enable iteration
-for i in range(0, 100):
+for i in range(0, 20):
     # indicate start
     print 'running...'
     
@@ -76,7 +77,7 @@ for i in range(0, 100):
         count += 1
         
     # print to output file (results[print]_[netlist]_[solved]_[length])
-    filename = '../Diagnostics/%s_%s/result%s_%s_%s_%s.txt' % (print_index, len(sorted_netlist), print_index, len(sorted_netlist), count - 1, total_length)
+    filename = '../Diagnostics/%s_%s/result%s_%s_%s_%s_%s.txt' % (print_index, len(sorted_netlist), print_index, len(sorted_netlist), count - 1, total_length, (strftime("(%H.%M.%S, %dth)", localtime())))
     output = open(filename, "w")
     output.write('%s\n' % (sorted_netlist))
     output.write('The lower boundary for this netlist: %s\n\n' % (min_dist))
@@ -108,12 +109,12 @@ for i in range(0, 100):
     
     # indicate solution
     freq = 1000
-    dur = 500
-    #winsound.Beep(freq,dur)
+    dur = 0
+    winsound.Beep(freq,dur)
     
     # define input for visualisation
     moves_raw = np.array((moves_x, moves_y, moves_z))
     moves = np.transpose(moves_raw)
     
     # visualise board by Visualisation.py (disable in iteration)
-    visualisation.init(width, height, gates, moves, path_lengths, total_length)
+    #visualisation.init(width, height, gates, moves, path_lengths, total_length)
