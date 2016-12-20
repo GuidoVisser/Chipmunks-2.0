@@ -142,7 +142,7 @@ class StatePosition(State):
         # distance to goal
         self.dist = self.position.getDist(self.goal)
 
-    def createChildren(self, visited_list):
+    def createChildren(self, visited_list, children_list):
         if not self.children:
             adjacent_positions = self.position.adjacent()
             for pos in adjacent_positions:
@@ -156,7 +156,7 @@ class StatePosition(State):
                     break
                 else:
                     if not child.position.inList(self.grid.walls) and not child.position.inList(
-                            visited_list) and not child.position.inList(self.grid.gates):
+                            visited_list) and not child.position.inList(self.grid.gates) and not child.position.inList(children_list):
 
                         for pos in self.grid.gates_children:
                             if pos.x == child.position.x:
@@ -187,6 +187,7 @@ class AStar_Solver:
         """
         self.path = []
         self.visited = []
+        self.positions_children = []
         self.priorityQueue = PriorityQueue()
         self.start = start
         self.goal = goal
@@ -213,7 +214,7 @@ class AStar_Solver:
             closestChild = self.priorityQueue.get()[1]
 
             # create the children for this closest child
-            closestChild.createChildren(self.visited)
+            closestChild.createChildren(self.visited, self.positions_children)
 
             # add the closest child to the visited list
             self.visited.append(closestChild.position)
@@ -227,6 +228,7 @@ class AStar_Solver:
                     break
 
                 # add child to children list
+                self.positions_children.append(child.position)
                 self.priorityQueue.put((child.rating, child))
 
         # return found path if found
