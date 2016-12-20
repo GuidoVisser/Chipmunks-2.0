@@ -28,7 +28,7 @@ for i in range(0, 20):
     
     # load board data
     print_file = '../Netlists and prints/print1.csv'
-    print_index = int(print_file[28])
+    print_index = int(print_file[-5])
     netlist_file = '../Netlists and prints/netlist1_30.csv'
     
     # board dimensions
@@ -58,23 +58,55 @@ for i in range(0, 20):
     total_length, count = 0, 1
     
     # run A-Star solver per netlist item, break if goal not possible
-    for connection in sorted_netlist:
-        a = Astar.AStar_Solver(grid, gates[connection[0]], gates[connection[1]])
-        
-        if not a.Solve():
-            print "Goal is not possible."
-            break
-        
-        # add found path to walls and all paths
-        grid.walls += a.path
-        all_paths.append(a.path)
-        
-        # record procress
-        print 'Line %s solved, of length %s. Lowest possible is %s' % (count, len(a.path) - 1, gates[connection[0]].getDist(gates[connection[1]]))
-        
-        # add path length to total
-        total_length += len(a.path) - 1
-        count += 1
+    j = 0
+    stepBack = 0
+    while j < len(sorted_netlist):
+        for connection in sorted_netlist[j:]:
+            a = Astar.AStar_Solver(grid, gates[connection[0]], gates[connection[1]])
+
+            if not a.Solve():
+                if j > stepBack:
+
+                    # remove latest paths from walls
+                    for path in all_paths[-stepBack:]:
+                        for position in path:
+                            grid.walls.remove(position)
+
+                    # remove latest paths from all_paths
+                    all_paths = all_paths[:-stepBack]
+
+                    # rearrange sorted_netlist so that latest paths are put at the end
+                    sorted_netlist += sorted_netlist[j-stepBack:j]
+                    for k in xrange(0, stepBack):
+                        sorted_netlist.remove(sorted_netlist[j-stepBack])
+
+                    # set values i and count back
+                    j -= stepBack
+                    count -= stepBack
+
+                    # message
+                    print "path not possible"
+                    print "removing last %i paths, and resuming" % (stepBack)
+
+                    # break out of for loop
+                    break
+
+                else:
+                    print "Goal is not possible."
+                    break
+
+            # add found path to walls and all paths
+            grid.walls += a.path
+            all_paths.append(a.path)
+
+            # record procress
+            print 'Line %s solved, of length %s. Lowest possible is %s' % (
+            count, len(a.path) - 1, gates[connection[0]].getDist(gates[connection[1]]))
+
+            # add path length to total
+            total_length += len(a.path) - 1
+            count += 1
+            j += 1
         
     # print to output file (results[print]_[netlist]_[solved]_[length])
     filename = '../Diagnostics/%s_%s/result%s_%s_%s_%s_%s.txt' % (print_index, len(sorted_netlist), print_index, len(sorted_netlist), count - 1, total_length, (strftime("(%H.%M.%S, %dth)", localtime())))
