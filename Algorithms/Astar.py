@@ -1,5 +1,5 @@
 """"
-A-Star algorithm - Returns shortest possible route, accounting for walls, gates, 
+A-Star algorithm - Returns shortest possible route, accounting for walls, gates,
 (grand)children of gates and other paths. X- Y- and Z-moves are random at the moment.
 """
 import csv
@@ -83,8 +83,8 @@ class Grid(object):
             for z in xrange(0, max_z + 1):
                 self.walls.append(Position(x, -1, z))
                 self.walls.append(Position(x, max_y + 1, z))
-        
-        # create children and grandchildren for gates without overlap        
+
+        # create children and grandchildren for gates without overlap
         for gate in gates:
             self.gates_children += gate.adjacent()
         for child in self.gates_children:
@@ -99,7 +99,7 @@ class Grid(object):
                 if not grand_grandchild.inList(self.gates_grand_grandchildren):
                     self.gates_grand_grandchildren.append(grand_grandchild)
         """
-        
+
 class State(object):
     """
     State object for the grid with start-, current- and endposition, parent of child,
@@ -141,7 +141,7 @@ class StatePosition(State):
 
         # distance to goal
         self.dist = self.position.getDist(self.goal)
-       
+
     def createChildren(self, visited_list):
         if not self.children:
             adjacent_positions = self.position.adjacent()
@@ -157,7 +157,7 @@ class StatePosition(State):
                 else:
                     if not child.position.inList(self.grid.walls) and not child.position.inList(
                             visited_list) and not child.position.inList(self.grid.gates):
-                        
+
                         for pos in self.grid.gates_children:
                             if pos.x == child.position.x:
                                 if pos.y == child.position.y:
@@ -169,7 +169,7 @@ class StatePosition(State):
                                 if pos.y == child.position.y:
                                     if pos.z == child.position.z:
                                         child.cost += 1
-                        """                
+                        """
                         for pos in self.grid.gates_grand_grandchildren:
                             if pos.x == child.position.x:
                                 if pos.y == child.position.y:
@@ -194,7 +194,7 @@ class AStar_Solver:
 
     def Solve(self):
         """
-        Returns path if found, 
+        Returns path if found,
         """
         # initialize starting point (position to start, parent to 0)
         startState = StatePosition(self.grid,
@@ -211,7 +211,7 @@ class AStar_Solver:
 
             # The closest child is the one with the shortest distance to goal
             closestChild = self.priorityQueue.get()[1]
-           
+
             # create the children for this closest child
             closestChild.createChildren(self.visited)
 
@@ -250,7 +250,9 @@ def create_print(filename):
         csvfile = csv.DictReader(printfile)
         for row in csvfile:
             gateslist.append(Position(int(row['x']), int(row['y']), int(row['z'])))
-    
+
+    printfile.close()
+
     # return list of positions
     return gateslist
 
@@ -271,6 +273,8 @@ def create_netlist(filename):
         netlist = []
         for row in csvfile:
             netlist.append((int(row[0]), int(row[1])))
-    
+
+    netlistfile.close()
+
     # return list of tuples
     return netlist
