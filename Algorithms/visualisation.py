@@ -95,4 +95,5 @@ def init(width, height, gates, moves, path_lengths, total_length):
     
     # draw XY plane grid and moves
     drawXYplane(width, height) 
-    drawMoves(moves, path_lengths, total_length) 
+    drawMoves(moves, path_lengths, total_length)
+    plt.show()

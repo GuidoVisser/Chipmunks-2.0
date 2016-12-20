@@ -28,7 +28,7 @@ for i in range(0, 100):
     # load board data
     print_file = '../Netlists and prints/print1.csv'
     print_index = int(print_file[28])
-    netlist_file = '../Netlists and prints/netlist1_50.csv'
+    netlist_file = '../Netlists and prints/netlist1_30.csv'
     
     # board dimensions
     width = 17

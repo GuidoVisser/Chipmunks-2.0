@@ -250,8 +250,6 @@ def create_print(filename):
         csvfile = csv.DictReader(printfile)
         for row in csvfile:
             gateslist.append(Position(int(row['x']), int(row['y']), int(row['z'])))
-        
-    printfile.close()
     
     # return list of positions
     return gateslist
@@ -273,8 +271,6 @@ def create_netlist(filename):
         netlist = []
         for row in csvfile:
             netlist.append((int(row[0]), int(row[1])))
-
-    netlistfile.close()
     
     # return list of tuples
     return netlist
