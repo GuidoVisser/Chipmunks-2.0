@@ -1,7 +1,6 @@
 """
 MAIN
 accompaniying python files are Astar, visualisation and netlist_sort
-
 TODO
     profiler implementeren: Guido
     rearrange: Guido
@@ -20,6 +19,7 @@ import visualisation
 import numpy as np
 import winsound
 import copy
+from time import localtime, strftime
 
 # enable iteration
 for iteration in range(0, 1):
@@ -27,12 +27,13 @@ for iteration in range(0, 1):
     print 'running...'
 
     # load board data
-    print_file = 'print2.csv'
-    print_index = int(print_file[-5])
-    netlist_file = 'netlist2_60.csv'
+    print_file = '../Netlists and prints/testprint.csv'
+    print_index = 0 #int(print_file[-5])
+    netlist_file = '../Netlists and prints/testnetlist.csv'
 
     # board dimensions
-    width = 17
+    width = 3
+    height = 2
     if print_index == 1:
         height = 12
     elif print_index == 2:
@@ -61,7 +62,7 @@ for iteration in range(0, 1):
     total_length, count, max_count = 0, 1, 1
 
 
-    sequence_position, stepBack, rearrange_count, all_sequences = 0, 1, 0, []
+    sequence_position, stepBack, rearrange_count, all_sequences = 0, 0, 0, []
 
     first_sequence = []
     for i in xrange(0, len(sorted_netlist)):
@@ -79,6 +80,7 @@ for iteration in range(0, 1):
 
                     # remove latest paths from walls
                     for path in all_paths[-stepBack:]:
+                        total_length -= len(path)
                         for position in path:
                             grid.walls.remove(position)
 
@@ -132,8 +134,8 @@ for iteration in range(0, 1):
                 max_count = count
 
     # print to output file (results[print]_[netlist]_[solved]_[length])
-    filename = 'Diagnostics/%s_%s/result_%s_%s_%s_%s_%s.txt' % (
-    print_index, len(sorted_netlist), print_index, len(sorted_netlist), max_count - 1, total_length, iteration)
+    filename = '../Diagnostics/%s_%s/result_%s_%s_%s_%s_%s_%s.txt' % (
+    print_index, len(sorted_netlist), print_index, len(sorted_netlist), max_count - 1, total_length, iteration, (strftime("(%H.%M.%S, %dth)", localtime())))
     output = open(filename, "w")
     output.write('%s\n' % (sorted_netlist))
     output.write('The lower boundary for this netlist: %s\n\n' % (min_dist))
@@ -173,4 +175,5 @@ for iteration in range(0, 1):
     moves = np.transpose(moves_raw)
 
     # visualise board by Visualisation.py (disable in iteration)
-    # visualisation.init(width, height, gates, moves, path_lengths, total_length)
+    visualisation.init(width, height, gates, moves, path_lengths, total_length)
+    
