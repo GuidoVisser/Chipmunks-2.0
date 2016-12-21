@@ -87,10 +87,12 @@ class Grid(object):
         # create children and grandchildren for gates without overlap
         for gate in gates:
             self.gates_children += gate.adjacent()
+        grandchildren = []
         for child in self.gates_children:
-            grandchildren = child.adjacent()
-            for grandchild in grandchildren:
-                if not grandchild.inList(self.gates_grandchildren):
+            grandchildren_temp = child.adjacent()
+            for grandchild in grandchildren_temp:
+                if not grandchild.inList(grandchildren):
+                    grandchildren.append(grandchild)
                     self.gates_grandchildren.append(grandchild)
         """
         for child in self.gates_grandchildren:
@@ -126,7 +128,7 @@ class State(object):
             self.start = start
             self.goal = goal
 
-    def createChildren(self, visited_list):
+    def createChildren(self, visited_list, children_list):
         pass
 
 
@@ -158,17 +160,12 @@ class StatePosition(State):
                     if not child.position.inList(self.grid.walls) and not child.position.inList(
                             visited_list) and not child.position.inList(self.grid.gates) and not child.position.inList(children_list):
 
-                        for pos in self.grid.gates_children:
-                            if pos.x == child.position.x:
-                                if pos.y == child.position.y:
-                                    if pos.z == child.position.z:
-                                        child.cost += 21
+                        if child.position.inList(self.grid.gates_children):
+                            child.cost += 21
 
-                        for pos in self.grid.gates_grandchildren:
-                            if pos.x == child.position.x:
-                                if pos.y == child.position.y:
-                                    if pos.z == child.position.z:
-                                        child.cost += 1
+                        if child.position.inList(self.grid.gates_grandchildren):
+                            child.cost += 1
+
                         """
                         for pos in self.grid.gates_grand_grandchildren:
                             if pos.x == child.position.x:
