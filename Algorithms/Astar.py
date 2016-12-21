@@ -69,7 +69,7 @@ class Grid(object):
         self.walls = []
         self.gates_children = []
         self.gates_grandchildren = []
-        #self.gates_grand_grandchildren = []
+        #self.gates_great_grandchildren = []
 
         for x in xrange(-1, max_x + 2):
             for y in xrange(-1, max_y + 2):
@@ -87,19 +87,18 @@ class Grid(object):
         # create children and grandchildren for gates without overlap
         for gate in gates:
             self.gates_children += gate.adjacent()
-        grandchildren = []
         for child in self.gates_children:
+            grandchildren = []
             grandchildren_temp = child.adjacent()
             for grandchild in grandchildren_temp:
-                if not grandchild.inList(grandchildren):
-                    grandchildren.append(grandchild)
-                    self.gates_grandchildren.append(grandchild)
+                grandchildren.append(grandchild)
+                self.gates_grandchildren.append(grandchild)
         """
         for child in self.gates_grandchildren:
-            grand_grandchildren = child.adjacent()
-            for grand_grandchild in grand_grandchildren:
-                if not grand_grandchild.inList(self.gates_grand_grandchildren):
-                    self.gates_grand_grandchildren.append(grand_grandchild)
+            great_grandchildren = child.adjacent()
+            for great_grandchild in great_grandchildren:
+                if not great_grandchild.inList(self.gates_great_grandchildren):
+                    self.gates_great_grandchildren.append(great_grandchild)
         """
 
 class State(object):
@@ -154,7 +153,6 @@ class StatePosition(State):
                                         self,
                                         self.start,
                                         self.goal)
-
                 # if child is goal
                 if child.dist == 0:
                     self.children.append(child)
@@ -165,12 +163,18 @@ class StatePosition(State):
                         visited_list) and not child.position.inList(self.grid.gates) and not child.position.inList(children_list):
 
                     # increase cost of children of gates
-                    if child.position.inList(self.grid.gates_children):
-                        child.cost += 21
+                    for pos in self.grid.gates_children:
+                        if pos.x == child.position.x:
+                            if pos.y == child.position.y:
+                                if pos.z == child.position.z:
+                                    child.cost += 5
 
                     # increase cost of grandchildren of gates
-                    if child.position.inList(self.grid.gates_grandchildren):
-                        child.cost += 1
+                    for pos in self.grid.gates_grandchildren:
+                        if pos.x == child.position.x:
+                            if pos.y == child.position.y:
+                                if pos.z == child.position.z:
+                                    child.cost += 1
 
                     """
                     for pos in self.grid.gates_grand_grandchildren:
@@ -182,7 +186,7 @@ class StatePosition(State):
 
                     # add distance to cost
                     child.cost += 10
-
+                    print child.position.x, child.position.y, child.position.z, child.cost
                     # ensure priorityQueue maintains order of input
                     child.cost += i * 0.0000001
 
@@ -268,8 +272,6 @@ def create_print(filename):
         for row in csvfile:
             gateslist.append(Position(int(row['x']), int(row['y']), int(row['z'])))
 
-    printfile.close()
-
     # return list of positions
     return gateslist
 
@@ -290,8 +292,6 @@ def create_netlist(filename):
         netlist = []
         for row in csvfile:
             netlist.append((int(row[0]), int(row[1])))
-
-    netlistfile.close()
-
+            
     # return list of tuples
     return netlist
