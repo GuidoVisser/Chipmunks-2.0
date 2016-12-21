@@ -147,35 +147,53 @@ class StatePosition(State):
     def createChildren(self, visited_list, children_list):
         if not self.children:
             adjacent_positions = self.position.adjacent()
+            i = 0
             for pos in adjacent_positions:
                 child = StatePosition(self.grid,
                                         pos,
                                         self,
                                         self.start,
                                         self.goal)
+
+                # if child is goal
                 if child.dist == 0:
                     self.children.append(child)
                     break
-                else:
-                    if not child.position.inList(self.grid.walls) and not child.position.inList(
-                            visited_list) and not child.position.inList(self.grid.gates) and not child.position.inList(children_list):
 
-                        if child.position.inList(self.grid.gates_children):
-                            child.cost += 21
+                # Check child for viability
+                if not child.position.inList(self.grid.walls) and not child.position.inList(
+                        visited_list) and not child.position.inList(self.grid.gates) and not child.position.inList(children_list):
 
-                        if child.position.inList(self.grid.gates_grandchildren):
-                            child.cost += 1
+                    # increase cost of children of gates
+                    if child.position.inList(self.grid.gates_children):
+                        child.cost += 21
 
-                        """
-                        for pos in self.grid.gates_grand_grandchildren:
-                            if pos.x == child.position.x:
-                                if pos.y == child.position.y:
-                                    if pos.z == child.position.z:
-                                        child.cost += 1
-                        """
-                        child.cost += 10
-                        child.rating = child.dist * 10 + child.cost
-                        self.children.append(child)
+                    # increase cost of grandchildren of gates
+                    if child.position.inList(self.grid.gates_grandchildren):
+                        child.cost += 1
+
+                    """
+                    for pos in self.grid.gates_grand_grandchildren:
+                        if pos.x == child.position.x:
+                            if pos.y == child.position.y:
+                                if pos.z == child.position.z:
+                                    child.cost += 1
+                    """
+
+                    # add distance to cost
+                    child.cost += 10
+
+                    # ensure priorityQueue maintains order of input
+                    child.cost += i * 0.0000001
+
+                    # calculate rating of child
+                    child.rating = child.dist * 10 + child.cost
+
+                    # add child to children of parent
+                    self.children.append(child)
+
+                # increment
+                i += 1
 
 class AStar_Solver:
     def __init__(self, grid, start, goal):

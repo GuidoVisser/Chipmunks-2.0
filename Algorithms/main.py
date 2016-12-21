@@ -19,24 +19,27 @@ import netlist_sort
 import visualisation
 import numpy as np
 import winsound
-from time import localtime, strftime
+import copy
 
 # enable iteration
-for i in range(0, 20):
+for iteration in range(0, 1):
     # indicate start
     print 'running...'
 
     # load board data
-    print_file = '../Netlists and prints/print1.csv'
+    print_file = 'print2.csv'
     print_index = int(print_file[-5])
-    netlist_file = '../Netlists and prints/netlist1_30.csv'
-    
+    netlist_file = 'netlist2_60.csv'
+
     # board dimensions
     width = 17
     if print_index == 1:
         height = 12
     elif print_index == 2:
         height = 16
+
+    # width = 7
+    # height = 6
 
     # initialize gates, netlist and grid
     gates = Astar.create_print(print_file)
@@ -55,18 +58,24 @@ for i in range(0, 20):
     all_paths = []
 
     # initialize resulting length, iteration count
-    total_length, count = 0, 1
+    total_length, count, max_count = 0, 1, 1
+
+
+    sequence_position, stepBack, rearrange_count, all_sequences = 0, 1, 0, []
+
+    first_sequence = []
+    for i in xrange(0, len(sorted_netlist)):
+        first_sequence.append(i)
+    all_sequences.append(first_sequence)
 
     # run A-Star solver per netlist item, break if goal not possible
-    j = 0
-    stepBack = 0
-    
-    while j < len(sorted_netlist):
-        for connection in sorted_netlist[j:]:
+    while sequence_position < len(sorted_netlist):
+        current_sequence = copy.copy(all_sequences[-1])
+        for connection in sorted_netlist[sequence_position:]:
             a = Astar.AStar_Solver(grid, gates[connection[0]], gates[connection[1]])
 
             if not a.Solve():
-                if j > stepBack and stepBack != 0:
+                if sequence_position > stepBack and stepBack != 0:
 
                     # remove latest paths from walls
                     for path in all_paths[-stepBack:]:
@@ -77,13 +86,23 @@ for i in range(0, 20):
                     all_paths = all_paths[:-stepBack]
 
                     # rearrange sorted_netlist so that latest paths are put at the end
-                    sorted_netlist += sorted_netlist[j-stepBack:j]
+                    sorted_netlist += sorted_netlist[sequence_position-stepBack:sequence_position]
+                    current_sequence += current_sequence[sequence_position-stepBack:sequence_position]
                     for k in xrange(0, stepBack):
-                        sorted_netlist.remove(sorted_netlist[j-stepBack])
+                        sorted_netlist.remove(sorted_netlist[sequence_position-stepBack])
+                        current_sequence.remove(current_sequence[sequence_position-stepBack])
 
                     # set values i and count back
-                    j -= stepBack
+                    sequence_position -= stepBack
                     count -= stepBack
+                    rearrange_count += 1
+
+                    if current_sequence in all_sequences:
+                        print "breaking out of loop"
+                        sequence_position += len(sorted_netlist)
+                        break
+                    else:
+                        all_sequences.append(current_sequence)
 
                     # message
                     print "path not possible"
@@ -94,7 +113,7 @@ for i in range(0, 20):
 
                 else:
                     print "Goal is not possible."
-                    j += len(sorted_netlist)
+                    sequence_position += len(sorted_netlist)
                     break
 
             # add found path to walls and all paths
@@ -108,11 +127,13 @@ for i in range(0, 20):
             # add path length to total
             total_length += len(a.path) - 1
             count += 1
-            j += 1
-            
+            sequence_position += 1
+            if count > max_count:
+                max_count = count
+
     # print to output file (results[print]_[netlist]_[solved]_[length])
-    filename = '../Diagnostics/%s_%s/result%s_%s_%s_%s_%s.txt' % (
-    print_index, len(sorted_netlist), print_index, len(sorted_netlist), count - 1, total_length, (strftime("(%H.%M.%S, %dth)", localtime())))
+    filename = 'Diagnostics/%s_%s/result_%s_%s_%s_%s_%s.txt' % (
+    print_index, len(sorted_netlist), print_index, len(sorted_netlist), max_count - 1, total_length, iteration)
     output = open(filename, "w")
     output.write('%s\n' % (sorted_netlist))
     output.write('The lower boundary for this netlist: %s\n\n' % (min_dist))
@@ -134,23 +155,22 @@ for i in range(0, 20):
         count += 1
 
     # print score compared to lower bound
-    print 'Number of paths found: %s / %s' % (count - 1, len(sorted_netlist))
+    print 'Number of paths found: %s / %s' % (max_count - 1, len(sorted_netlist))
     print 'The lower boundary for this netlist: %s' % (min_dist)
     print 'The total length of this run: ', total_length
-    output.write('Number of paths found: %s / %s\n' % (count - 1, len(sorted_netlist)))
+    output.write('Number of paths found: %s / %s\n' % (max_count - 1, len(sorted_netlist)))
     output.write('The total length is: %s\n' % (total_length))
 
     output.close()
 
     # indicate solution
     freq = 1000
-    dur = 0
-    winsound.Beep(freq,dur)
+    dur = 500
+    # winsound.Beep(freq,dur)
 
     # define input for visualisation
     moves_raw = np.array((moves_x, moves_y, moves_z))
     moves = np.transpose(moves_raw)
 
     # visualise board by Visualisation.py (disable in iteration)
-    #visualisation.init(width, height, gates, moves, path_lengths, total_length)
-    
+    # visualisation.init(width, height, gates, moves, path_lengths, total_length)
